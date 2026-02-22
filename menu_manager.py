@@ -15,11 +15,13 @@ class TabManager:
     
     # Define all available tabs
     TABS = [
-        {"name": "system", "label": "SYS", "index": 0},
-        {"name": "weather", "label": "WEA", "index": 1},
-        {"name": "network", "label": "NET", "index": 2},
-        {"name": "settings", "label": "SET", "index": 3},
-        {"name": "about", "label": "ABT", "index": 4},
+        {"name": "home", "label": "●", "index": 0},
+        {"name": "system", "label": "⚙", "index": 1},
+        {"name": "weather", "label": "☁", "index": 2},
+        {"name": "network", "label": "📶", "index": 3},
+        {"name": "power", "label": "🔋", "index": 4},
+        {"name": "timer", "label": "⏱", "index": 5},
+        {"name": "settings", "label": "⚙", "index": 6},
     ]
     
     # Settings menu items

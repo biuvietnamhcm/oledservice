@@ -39,9 +39,9 @@ def main():
     # Initialize rotary encoder
     # ==============================
     rotary = RotaryEncoderHandler(
-        pin_push=6,
-        pin_a=25,
-        pin_b=27
+        pin_push=25,
+        pin_a=26,
+        pin_b=16
     )
 
     # ==============================
@@ -150,6 +150,8 @@ def main():
                 "brightness": settings_mgr.get_brightness(),
                 "contrast": settings_mgr.get_contrast(),
                 "wake_time": settings_mgr.get("wake_time", "07:30"),
+                # Additional data for new screens
+                "battery_percent": max(5, 100 - (stats.get('uptime_hours', 0) % 48) * 2),
             }
 
             display_mgr.render(display_data)

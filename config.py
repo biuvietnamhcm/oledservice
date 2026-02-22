@@ -36,21 +36,22 @@ DEFAULT_LONGITUDE = -74.0060
 DISPLAY_CYCLE_INTERVAL = 3  # seconds per screen (legacy, disabled with rotary)
 
 # Rotary Encoder GPIO Pins
-ROTARY_ENCODER_PIN_PUSH = 6    # Push button
-ROTARY_ENCODER_PIN_A = 25      # CLK
-ROTARY_ENCODER_PIN_B = 27      # DT
+ROTARY_ENCODER_PIN_PUSH = 25    # Push button
+ROTARY_ENCODER_PIN_A = 26      # CLK
+ROTARY_ENCODER_PIN_B = 16      # DT
 
 # Display rendering
-RENDER_INTERVAL = 1  # Refresh display every N seconds
+RENDER_INTERVAL = 0.1  # Refresh display every N seconds (faster for smooth animations)
 TEXT_CHAR_WIDTH = 6  # pixels per character (for centered text)
 
 # Tab display labels
 TAB_LABELS = {
-    "system": "SYS",
-    "weather": "WEA",
-    "network": "NET",
-    "settings": "SET",
-    "about": "ABT"
+    "home": "●",
+    "system": "⚙",
+    "weather": "☁",
+    "network": "📶",
+    "power": "🔋",
+    "timer": "⏱"
 }
 
 # Settings menu
@@ -58,3 +59,18 @@ BRIGHTNESS_MIN = 1
 BRIGHTNESS_MAX = 10
 CONTRAST_MIN = 10
 CONTRAST_MAX = 100
+
+# UI Colors & Symbols
+WIFI_ICON_WEAK = "▁"
+WIFI_ICON_MEDIUM = "▂"
+WIFI_ICON_STRONG = "▃"
+WIFI_ICON_EXCELLENT = "▄"
+
+BATTERY_ICON_EMPTY = "🪫"
+BATTERY_ICON_LOW = "🔋"
+BATTERY_ICON_FULL = "🔋"
+
+TEMP_HOT = "●"
+TEMP_WARM = "◐"
+TEMP_COOL = "◑"
+TEMP_COLD = "○"

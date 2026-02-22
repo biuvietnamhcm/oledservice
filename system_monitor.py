@@ -57,6 +57,27 @@ def get_uptime():
         return "Unknown"
 
 
+def get_uptime_hours():
+    """Get system uptime in hours as float"""
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.read().split()[0])
+            return uptime_seconds / 3600.0
+    except Exception as e:
+        print(f"Error reading uptime: {e}")
+        return 0.0
+
+
+def get_disk_free_percent():
+    """Get free disk space percentage"""
+    try:
+        total, used, free = psutil.disk_usage("/")
+        return round((free / total) * 100, 1)
+    except Exception as e:
+        print(f"Error reading disk free: {e}")
+        return 0
+
+
 def get_system_stats():
     """Get all system statistics"""
     return {
@@ -64,7 +85,9 @@ def get_system_stats():
         "cpu_usage": get_cpu_usage(),
         "memory_usage": get_memory_usage(),
         "disk_usage": get_disk_usage(),
+        "disk_free": get_disk_free_percent(),
         "uptime": get_uptime(),
+        "uptime_hours": get_uptime_hours(),
         "timestamp": datetime.now().isoformat()
     }
 

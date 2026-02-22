@@ -16,7 +16,7 @@ class SettingsManager:
         "brightness": 5,           # 1-10, maps to contrast
         "contrast": 55,            # 0-100
         "favorites": [],           # List of favorite tab names
-        "last_tab": "system",      # Last active tab
+        "last_tab": "home",        # Last active tab (new home screen)
         "wake_time": "07:30",      # Wake alarm time (HH:MM)
         "temperature_unit": "C",   # C or F
         "wifi_enabled": True,
