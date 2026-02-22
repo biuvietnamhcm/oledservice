@@ -1,0 +1,4 @@
+luma.oled==3.12.0
+luma.core==1.17.3
+psutil==5.9.6
+requests==2.31.0
