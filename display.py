@@ -9,28 +9,39 @@ from config import (
     DISPLAY_I2C_ADDRESS,
     DISPLAY_WIDTH,
     DISPLAY_HEIGHT,
-    DISPLAY_CYCLE_INTERVAL
+    DISPLAY_CYCLE_INTERVAL,
+    TEXT_CHAR_WIDTH
 )
 
 
 class DisplayManager:
     """Manages OLED display without PIL/Pillow - optimized for 128x64"""
     
-    def __init__(self):
+    def __init__(self, contrast=55):
         try:
             serial = i2c(port=DISPLAY_I2C_PORT, address=DISPLAY_I2C_ADDRESS)
             self.device = sh1106(serial)
+            self.set_contrast(contrast)
         except Exception as e:
             print(f"Error initializing display: {e}")
             self.device = None
         
         self.current_screen = 0
         self.last_cycle_time = 0
+        self.contrast_value = contrast
     
     def clear(self):
         """Clear the display"""
         if self.device:
             self.device.clear()
+    
+    def set_contrast(self, value):
+        """Set display contrast (0-100)"""
+        if self.device:
+            # Normalize to device range (0-255)
+            device_contrast = int((value / 100.0) * 255)
+            self.device.contrast(device_contrast)
+            self.contrast_value = value
     
     def draw_text(self, d, text, x, y):
         """Draw text at position"""
@@ -45,6 +56,24 @@ class DisplayManager:
     def draw_divider(self, d, y):
         """Draw horizontal divider line"""
         d.line((0, y, DISPLAY_WIDTH - 1, y), fill=255)
+    
+    def draw_tab_header(self, d, tab_labels):
+        """Draw tab header with active tab highlighted"""
+        # Tab header at top: [SYS] WEA NET SET ABT
+        self.draw_text_centered(d, tab_labels, 2)
+        self.draw_divider(d, 12)
+    
+    def draw_progress_bar(self, d, value, min_val, max_val, x, y, width=50, height=6):
+        """Draw a horizontal progress bar"""
+        # Calculate fill percentage
+        percent = (value - min_val) / (max_val - min_val)
+        filled_width = int(width * percent)
+        
+        # Draw border
+        d.rectangle((x, y, x + width, y + height), outline=255, fill=0)
+        # Draw fill
+        if filled_width > 0:
+            d.rectangle((x, y, x + filled_width, y + height), fill=255)
     
     def draw_screen_time(self, d, now):
         time_str = now.strftime("%H:%M:%S")
@@ -150,27 +179,110 @@ class DisplayManager:
         self.draw_divider(d, 48)
         self.draw_text_centered(d, "Active", 53)
     
+    def draw_screen_settings(self, d, menu_state):
+        """Draw settings screen with menu navigation"""
+        self.draw_text(d, "SETTINGS", 2, 2)
+        self.draw_divider(d, 12)
+        
+        if menu_state["mode"] == "view":
+            # Show all settings overview
+            self.draw_text(d, "Brightness: " + str(menu_state.get("brightness", 5)), 2, 16)
+            self.draw_text(d, "Contrast: " + str(menu_state.get("contrast", 55)), 2, 26)
+            self.draw_text(d, "Wake Time: " + str(menu_state.get("wake_time", "07:30")), 2, 36)
+            self.draw_divider(d, 48)
+            self.draw_text_centered(d, "Press to edit", 52)
+        
+        elif menu_state["mode"] == "menu":
+            # Show menu with selection indicator
+            items = [
+                "Brightness",
+                "Contrast",
+                "Favorites",
+                "Wake Time",
+                "Temp Unit"
+            ]
+            menu_idx = menu_state.get("menu_index", 0)
+            
+            y = 16
+            for i, item in enumerate(items[:4]):  # Show 4 items max
+                prefix = "> " if i == menu_idx else "  "
+                self.draw_text(d, prefix + item, 2, y)
+                y += 12
+            
+            self.draw_divider(d, 52)
+            self.draw_text_centered(d, "Rotate/Press", 55)
+        
+        elif menu_state["mode"] == "edit":
+            # Show value being edited
+            item = menu_state.get("menu_item", {})
+            label = item.get("label", "Unknown")
+            value = menu_state.get("edit_value", 0)
+            
+            self.draw_text_centered(d, label, 16)
+            self.draw_divider(d, 28)
+            
+            # Draw progress bar for sliders
+            if item.get("type") == "slider":
+                min_v = item.get("min", 0)
+                max_v = item.get("max", 100)
+                self.draw_progress_bar(d, value, min_v, max_v, 15, 36, width=98)
+                self.draw_text_centered(d, str(value), 46)
+            else:
+                self.draw_text_centered(d, str(value), 36)
+            
+            self.draw_divider(d, 52)
+            self.draw_text_centered(d, "Press to save", 55)
+    
+    def draw_screen_about(self, d):
+        """Draw about screen"""
+        self.draw_text(d, "ABOUT", 2, 2)
+        self.draw_divider(d, 12)
+        self.draw_text_centered(d, "OLED Monitor", 16)
+        self.draw_text_centered(d, "v2.0", 26)
+        self.draw_divider(d, 36)
+        self.draw_text_centered(d, "GPIO 6/25/27", 40)
+        self.draw_text_centered(d, "Interactive Tab UI", 50)
+    
     def render(self, data):
-        """Render display with cycling screens"""
+        """Render display with tab-based navigation"""
         if not self.device:
             return
         
-        import time
-        current_time = time.time()
-        
-        # Check if we should cycle screens
-        if current_time - self.last_cycle_time >= DISPLAY_CYCLE_INTERVAL:
-            self.current_screen = (self.current_screen + 1) % 4
-            self.last_cycle_time = current_time
+        # Update contrast if provided
+        if "contrast" in data:
+            self.set_contrast(data["contrast"])
         
         with canvas(self.device) as d:
+            # Priority: Wake alarm takes over everything
             if data.get("wake_active"):
                 self.draw_wake_alarm(d, data["remaining_time"])
-            elif self.current_screen == 0:
-                self.draw_screen_time(d, data["now"])
-            elif self.current_screen == 1:
-                self.draw_screen_system(d, data["stats"], data["ip_status"])
-            elif self.current_screen == 2:
-                self.draw_screen_weather(d, data["weather"])
-            elif self.current_screen == 3:
-                self.draw_screen_network(d, data["ip_status"], data["signal"])
+            else:
+                # Get menu state if available
+                menu_state = data.get("menu_state", {})
+                active_tab = data.get("active_tab", "system")
+                
+                # Draw tab header
+                tab_labels = data.get("tab_labels", "SYS WEA NET SET ABT")
+                self.draw_tab_header(d, tab_labels)
+                
+                # Draw content based on active tab
+                if active_tab == "system":
+                    self.draw_screen_system(d, data["stats"], data["ip_status"])
+                elif active_tab == "weather":
+                    self.draw_screen_weather(d, data["weather"])
+                elif active_tab == "network":
+                    self.draw_screen_network(d, data["ip_status"], data["signal"])
+                elif active_tab == "settings":
+                    # Merge settings data with menu state
+                    settings_data = {
+                        "mode": menu_state.get("mode", "view"),
+                        "menu_index": menu_state.get("menu_index", 0),
+                        "menu_item": menu_state.get("menu_item"),
+                        "edit_value": menu_state.get("edit_value"),
+                        "brightness": data.get("brightness", 5),
+                        "contrast": data.get("contrast", 55),
+                        "wake_time": data.get("wake_time", "07:30")
+                    }
+                    self.draw_screen_settings(d, settings_data)
+                elif active_tab == "about":
+                    self.draw_screen_about(d)
